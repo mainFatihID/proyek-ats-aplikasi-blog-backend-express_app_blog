@@ -51,19 +51,23 @@ app.post('/api/categories/db_app_blog', async (req: Request, res: Response) => {
             category_description
         } = req.body;
 
-        const [result] = await pool.query(
+        const [result]: any = await pool.query(
             "INSERT INTO tb_blog_categories (category_id, category_name, category_description) VALUES (?, ?, ?)",
             [
                 category_id, 
                 category_name, 
                 category_description
             ]
-        );
+        )
 
-        res.status(201).json({
-            message: "Category successfully created!",
-            data: result
-        });
+        if (result.affectedRows > 0) {    
+            res.status(201).json({
+                message: "Category added successfully!",
+                affectedRows: result.affectedRows,
+                data: {category_id, category_name, category_description}
+            })
+        }
+
     } catch (error) {
         console.error(error)
         res.status(500).json({message: "Failed to add category!", error});
@@ -80,7 +84,7 @@ app.post('/api/posts/db_app_blog', async (req: Request, res: Response) => {
             post_content
         } = req.body;
 
-        const [result] = await pool.query(
+        const [result]: any = await pool.query(
             "INSERT INTO tb_blog_posts (category_id, post_id, post_title, post_content) VALUES (?, ?, ?, ?)",
             [
                 category_id, 
@@ -88,11 +92,20 @@ app.post('/api/posts/db_app_blog', async (req: Request, res: Response) => {
                 post_title,
                 post_content
             ]
-        );
+        )
 
-        res.status(201).json({
-            message: "Post successfully created!"
-        });
+        if (result.affectedRows > 0) {
+            res.status(201).json({
+                message: "Post added successfully!",
+                affectedRows: result.affectedRows,
+                data: {
+                    category_id,
+                    post_id,
+                    post_title,
+                    post_content
+                }
+            })
+        }
     } catch (error) {
         console.error(error)
         res.status(500).json({message: "Failed to add post!", error});
@@ -156,11 +169,77 @@ app.put('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response) =
     }
 });
 
-// DELETE Categories
+app.patch('/api/categories/db_app_blog/:category_id', async (req: Request, res: Response) => {
+    try {
+        const {category_id} = req.params;
+        const {
+            category_name,
+            category_description
+        } = req.body;
+
+        const [result]: any = await pool.query(
+            `UPDATE tb_blog_categories
+            SET category_name = COALESCE(?, category_name),
+                category_description = COALESCE(?, category_description)
+            WHERE category_id = ?`,
+            [
+                category_name ?? null, 
+                category_description ?? null, 
+                category_id
+            ]
+        )
+
+        res.status(200).json({
+            message: "Category update successfully!",
+            data: result
+        })
+    } catch (error) {
+        res.status(500).json({message: "Failed to update category!", error})
+    }
+})
+
+app.patch('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response) => {
+    try {
+        const {post_id} = req.params;
+        const {
+            post_title,
+            post_content
+        } = req.body;
+
+        const [result]: any = await pool.query(
+            `UPDATE tb_blog_posts
+            SET post_title = COALESCE(?, post_title),
+                post_content = COALESCE(?, post_content)
+            WHERE post_id = ?`,
+            [
+                post_title ?? null, 
+                post_content ?? null, 
+                post_id
+            ]
+        )
+
+        res.status(200).json({
+            message: "Post update successfully!",
+            data: result
+        })
+    } catch (error) {
+        res.status(500).json({message: "Failed to update post!", error})
+    }
+})
+
 app.delete("/api/categories/db_app_blog/:category_id", async (req: Request, res: Response) => {
     try{
         const {category_id} = req.params
-        const [result] = await pool.query("DELETE FROM tb_blog_categories WHERE category_id = ?", [category_id])
+        const [result]: any  = await pool.query("DELETE FROM tb_blog_categories WHERE category_id = ?", [category_id])
+
+        res.status(200).json({
+            message: "Category succesfully deleted!",
+            data: result
+        })
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({message: "Category not found!"})
+        }
 
         res.status(200).json({
             message: "Category succesfully deleted!",
@@ -175,15 +254,22 @@ app.delete("/api/categories/db_app_blog/:category_id", async (req: Request, res:
 // DELETE Posts
 app.delete("/api/posts/db_app_blog/:post_id", async (req: Request, res: Response) => {
     try{
-        const {post_id} = req.params;
-        const [result] = await pool.query("DELETE FROM tb_blog_posts WHERE post_id = ?", 
-            [post_id]
-        );
+        const {post_id} = req.params
+        const [result]: any = await pool.query("DELETE FROM tb_blog_posts WHERE post_id = ?", [post_id])
 
         res.status(200).json({
             message: "Post succesfully deleted!",
             data: result
-        });
+        })
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({message: "Category not found!"})
+        }
+
+        res.status(200).json({
+            message: "Category succesfully deleted!",
+            data: result
+        })
     } catch(error) {
         console.error(error)
         res.status(500).json({message: "Failed to delete post!", error});
@@ -191,5 +277,5 @@ app.delete("/api/posts/db_app_blog/:post_id", async (req: Request, res: Response
 });
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-});
+  console.log(`Attention, Express.js is listening on port ${port}. Open http://localhost:${port} in ThunderClient or any Fetched Front-End.`)
+})  
