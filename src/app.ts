@@ -1,6 +1,30 @@
-import express, {type Express, type Request, type Response} from 'express';
+import express, {response, type Express, type Request, type Response} from 'express';
 import cors from 'cors';
 import pool from './db/index.ts';
+
+import {
+    ReasonPhrases,
+    StatusCodes,
+    getReasonPhrase,
+    getStatusCode,
+} from 'http-status-codes';
+import { error } from 'node:console';
+
+response
+    .status(StatusCodes.OK)
+    .send(ReasonPhrases.OK);
+
+response
+    .status(StatusCodes.INTERNAL_SERVER_ERROR)
+    .send({
+        error: getReasonPhrase(StatusCodes.INTERNAL_SERVER_ERROR)
+    });
+
+response
+    .status(getStatusCode('Internal Server Error'))
+    .send([
+        error, 'Internal Server Error'
+    ]);
 
 const app = express();
 const port = 3000;
