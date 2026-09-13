@@ -1,30 +1,10 @@
-import express, {response, type Express, type Request, type Response} from 'express';
+import express, {type Express, type Request, type Response} from 'express';
 import cors from 'cors';
 import pool from './db/index.ts';
-
-import {
-    ReasonPhrases,
-    StatusCodes,
-    getReasonPhrase,
-    getStatusCode,
-} from 'http-status-codes';
-import { error } from 'node:console';
-
-response
-    .status(StatusCodes.OK)
-    .send(ReasonPhrases.OK);
-
-response
-    .status(StatusCodes.INTERNAL_SERVER_ERROR)
-    .send({
-        error: getReasonPhrase(StatusCodes.INTERNAL_SERVER_ERROR)
-    });
-
-response
-    .status(getStatusCode('Internal Server Error'))
-    .send([
-        error, 'Internal Server Error'
-    ]);
+import {StatusCodes} from 'http-status-codes';
+import { validateBody } from './middleware/validate.ts';
+import { createCategorySchema, updateCategorySchema } from './schemas/category.schema.ts';
+import { createPostSchema, updatePostSchema } from './schemas/post.schema.ts';
 
 const app = express();
 const port = 3000;
@@ -39,35 +19,35 @@ app.get('/', (req, res) => {
 // GET Categories
 app.get('/api/categories/db_app_blog', async (req: Request, res: Response) => {
     try {
-        const categories = await pool.query("SELECT * FROM tb_blog_categories")
+        const categories = await pool.query("SELECT * FROM tb_blog_categories ORDER BY category_id DESC")
         
-        res.status(200).json({
-            message : "Categories data successfuly fetched!",
+        res.status(StatusCodes.OK).json({
+            message : "Categories data successfully fetched!",
             data    : categories[0]
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Internal server error!", error})
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Internal server error!", error})
     }
 });
 
 // GET Posts
 app.get('/api/posts/db_app_blog', async (req: Request, res: Response) => {
     try {
-        const posts = await pool.query("SELECT * FROM tb_blog_posts")
+        const posts = await pool.query("SELECT * FROM tb_blog_posts ORDER BY post_id DESC")
         
-        res.status(200).json({
-            message : "Posts data successfuly fetched",
+        res.status(StatusCodes.OK).json({
+            message : "Posts data successfully fetched",
             data    : posts[0]
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Internal server error!", error})
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Internal server error!", error})
     }
 });
 
 // POST Categories
-app.post('/api/categories/db_app_blog', async (req: Request, res: Response) => {
+app.post('/api/categories/db_app_blog', validateBody(createCategorySchema), async (req: Request, res: Response) => {
     try {
         const {
             category_id, 
@@ -85,7 +65,7 @@ app.post('/api/categories/db_app_blog', async (req: Request, res: Response) => {
         )
 
         if (result.affectedRows > 0) {    
-            res.status(201).json({
+            res.status(StatusCodes.CREATED).json({
                 message: "Category added successfully!",
                 affectedRows: result.affectedRows,
                 data: {category_id, category_name, category_description}
@@ -94,12 +74,12 @@ app.post('/api/categories/db_app_blog', async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Failed to add category!", error});
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to add category!", error});
     }
 });
 
 // POST Posts
-app.post('/api/posts/db_app_blog', async (req: Request, res: Response) => {
+app.post('/api/posts/db_app_blog', validateBody(createPostSchema), async (req: Request, res: Response) => {
     try {
         const {
             category_id, 
@@ -119,7 +99,7 @@ app.post('/api/posts/db_app_blog', async (req: Request, res: Response) => {
         )
 
         if (result.affectedRows > 0) {
-            res.status(201).json({
+            res.status(StatusCodes.CREATED).json({
                 message: "Post added successfully!",
                 affectedRows: result.affectedRows,
                 data: {
@@ -132,12 +112,12 @@ app.post('/api/posts/db_app_blog', async (req: Request, res: Response) => {
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Failed to add post!", error});
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to add post!", error});
     }
 });
 
 // Put Categories
-app.put('/api/categories/db_app_blog/:category_id', async (req: Request, res: Response) => {
+app.put('/api/categories/db_app_blog/:category_id', validateBody(createCategorySchema), async (req: Request, res: Response) => {
     try {
         const {category_id} = req.params;
         const {
@@ -155,18 +135,18 @@ app.put('/api/categories/db_app_blog/:category_id', async (req: Request, res: Re
             ]
         );
 
-        res.status(200).json({
+        res.status(StatusCodes.OK).json({
             message: "Category succesfully updated!",
             data: result
         })
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Failed to update category!", error})
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to update category!", error})
     }
 })
 
 // PUT Posts
-app.put('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response) => {
+app.put('/api/posts/db_app_blog/:post_id', validateBody(createPostSchema), async (req: Request, res: Response) => {
     try {
         const {post_id} = req.params;
         const {
@@ -183,17 +163,17 @@ app.put('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response) =
             ]
         );
 
-        res.status(200).json({
+        res.status(StatusCodes.OK).json({
             message: "Post succesfully updated!",
             data: result
         });
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Failed to update post!", error});
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to update post!", error});
     }
 });
 
-app.patch('/api/categories/db_app_blog/:category_id', async (req: Request, res: Response) => {
+app.patch('/api/categories/db_app_blog/:category_id', validateBody(updateCategorySchema), async (req: Request, res: Response) => {
     try {
         const {category_id} = req.params;
         const {
@@ -213,16 +193,17 @@ app.patch('/api/categories/db_app_blog/:category_id', async (req: Request, res: 
             ]
         )
 
-        res.status(200).json({
+        res.status(StatusCodes.OK).json({
             message: "Category update successfully!",
             data: result
         })
     } catch (error) {
-        res.status(500).json({message: "Failed to update category!", error})
+        console.error(error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to update category!", error})
     }
 })
 
-app.patch('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response) => {
+app.patch('/api/posts/db_app_blog/:post_id', validateBody(updatePostSchema), async (req: Request, res: Response) => {
     try {
         const {post_id} = req.params;
         const {
@@ -242,12 +223,13 @@ app.patch('/api/posts/db_app_blog/:post_id', async (req: Request, res: Response)
             ]
         )
 
-        res.status(200).json({
+        res.status(StatusCodes.OK).json({
             message: "Post update successfully!",
             data: result
         })
     } catch (error) {
-        res.status(500).json({message: "Failed to update post!", error})
+        console.error(error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to update post!", error})
     }
 })
 
@@ -256,22 +238,17 @@ app.delete("/api/categories/db_app_blog/:category_id", async (req: Request, res:
         const {category_id} = req.params
         const [result]: any  = await pool.query("DELETE FROM tb_blog_categories WHERE category_id = ?", [category_id])
 
-        res.status(200).json({
-            message: "Category succesfully deleted!",
-            data: result
-        })
-
         if (result.affectedRows === 0) {
-            return res.status(404).json({message: "Category not found!"})
+            return res.status(StatusCodes.NOT_FOUND).json({message: "Category not found!"})
         }
 
-        res.status(200).json({
+        res.status(StatusCodes.OK).json({
             message: "Category succesfully deleted!",
             data: result
         });
     } catch (error) {
         console.error(error)
-        res.status(500).json({message: "Failed to delete category!", error});
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to delete category!", error});
     }
 });
 
@@ -281,22 +258,17 @@ app.delete("/api/posts/db_app_blog/:post_id", async (req: Request, res: Response
         const {post_id} = req.params
         const [result]: any = await pool.query("DELETE FROM tb_blog_posts WHERE post_id = ?", [post_id])
 
-        res.status(200).json({
-            message: "Post succesfully deleted!",
-            data: result
-        })
-
         if (result.affectedRows === 0) {
-            return res.status(404).json({message: "Category not found!"})
+            return res.status(StatusCodes.NOT_FOUND).json({message: "Post not found!"})
         }
 
-        res.status(200).json({
-            message: "Category succesfully deleted!",
+        res.status(StatusCodes.OK).json({
+            message: "Post succesfully deleted!",
             data: result
         })
     } catch(error) {
         console.error(error)
-        res.status(500).json({message: "Failed to delete post!", error});
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({message: "Failed to delete post!", error});
     }
 });
 
