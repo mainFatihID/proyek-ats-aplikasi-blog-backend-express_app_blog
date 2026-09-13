@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 // GET Categories
 app.get('/api/categories/db_app_blog', async (req: Request, res: Response) => {
     try {
-        const categories = await pool.query("SELECT * FROM tb_blog_categories")
+        const categories = await pool.query("SELECT * FROM tb_blog_categories ORDER BY category_id DESC")
         
         res.status(StatusCodes.OK).json({
             message : "Categories data successfully fetched!",
@@ -34,7 +34,7 @@ app.get('/api/categories/db_app_blog', async (req: Request, res: Response) => {
 // GET Posts
 app.get('/api/posts/db_app_blog', async (req: Request, res: Response) => {
     try {
-        const posts = await pool.query("SELECT * FROM tb_blog_posts")
+        const posts = await pool.query("SELECT * FROM tb_blog_posts ORDER BY post_id DESC")
         
         res.status(StatusCodes.OK).json({
             message : "Posts data successfully fetched",
