@@ -4,7 +4,7 @@ const pool = await mysql.createConnection({
     host        : 'localhost',
     user        : 'root',
     database    : 'db_app_blog',
-    password    : 'EK9iFaWG_6OY@dn'
+    password    : 'Output0-Matador6-Abdomen9-Graph3-Curtly7-Mustang0-Second5-Demanding9'
 });
 
 export default pool 
